@@ -35,6 +35,7 @@ struct MockTimer : MockHandle
 
     MOCK_METHOD(void, start, (Duration, Duration), ());
     MOCK_METHOD(void, again, (), ());
+    MOCK_METHOD(void, stop, (), ());
 
     MOCK_METHOD(void, saveHandler, (THandler<uvw::TimerEvent>), ());
 
