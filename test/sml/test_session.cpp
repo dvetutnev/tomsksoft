@@ -6,6 +6,8 @@ namespace sml = boost::sml;
 
 using ::testing::InSequence;
 using ::testing::Return;
+using ::testing::StrictMock;
+using ::testing::_;
 
 
 namespace {
@@ -17,6 +19,7 @@ struct Mock
     MOCK_METHOD(void, push_to_header_buffer, (char), ());
     MOCK_METHOD(bool, is_header_complete, (), ());
     MOCK_METHOD(void, repeat, (), ());
+    MOCK_METHOD(void, halt, (), ());
 };
 
 
@@ -39,6 +42,7 @@ struct Session
         auto push_to_header_buffer = [&m] (const ByteEvent& event) { m.push_to_header_buffer(event.byte); };
         auto is_header_complete = [&m] () { return m.is_header_complete(); };
         auto repeat = [&m] () { m.repeat(); };
+        auto halt = [&m] () { m.halt(); };
 
 
         return make_transition_table(
@@ -51,6 +55,8 @@ struct Session
             "Is header complete"_s  = "Receive header"_s
 ,
             "Receive data"_s / repeat = "Receive header"_s
+,
+            *"Idle"_s + event<HaltEvent> / halt = X
         );
     }
 };
@@ -59,19 +65,16 @@ struct Session
 } // Anonymous namespace
 
 
-TEST(sml, session) {
-    Mock mock;
+TEST(Boost_SML, normal) {
+    StrictMock<Mock> mock;
 
-    EXPECT_CALL(mock, init).Times(1);
-
+    EXPECT_CALL(mock, init);
     {
         InSequence _;
         EXPECT_CALL(mock, push_to_header_buffer(42));
         EXPECT_CALL(mock, push_to_header_buffer(117));
     }
-
     EXPECT_CALL(mock, is_header_complete()).WillOnce(Return(false)).WillOnce(Return(true));
-
     EXPECT_CALL(mock, repeat);
 
 
@@ -80,4 +83,20 @@ TEST(sml, session) {
 
     sm.process_event(ByteEvent{42});
     sm.process_event(ByteEvent{117});
+}
+
+TEST(Boost_SML, halt) {
+    StrictMock<Mock> mock;
+
+    EXPECT_CALL(mock, init);
+    EXPECT_CALL(mock, push_to_header_buffer(_));
+    EXPECT_CALL(mock, is_header_complete()).WillRepeatedly(Return(false));
+    EXPECT_CALL(mock, halt);
+
+
+    Session session{mock};
+    sml::sm<Session> sm{session};
+
+    sm.process_event(ByteEvent{42});
+    sm.process_event(HaltEvent{});
 }
