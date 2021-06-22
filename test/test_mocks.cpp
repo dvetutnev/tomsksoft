@@ -31,7 +31,7 @@ TEST(MockSocket, save_handler) {
     MockHandle::THandler<uvw::DataEvent> savedHandlerDataEvent = nullptr;
     MockHandle::THandler<uvw::ErrorEvent> savedHandlerErrorEvent = nullptr;
 
-    EXPECT_CALL(mock, saveReadHandler).WillOnce(SaveArg<0>(&savedHandlerDataEvent));
+    EXPECT_CALL(mock, saveDataHandler).WillOnce(SaveArg<0>(&savedHandlerDataEvent));
     EXPECT_CALL(mock, saveErrorHandler).WillOnce(SaveArg<0>(&savedHandlerErrorEvent));
 
     mock.on<uvw::DataEvent>(handlerDataEvent);

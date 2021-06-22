@@ -8,11 +8,11 @@
 #include <type_traits>
 
 
-class Session;
+class SessionBase;
 
 struct MockServer
 {
-    MOCK_METHOD(void, remove, (Session*), ());
+    MOCK_METHOD(void, remove, (SessionBase*), ());
 };
 
 struct MockWriter
@@ -47,13 +47,13 @@ struct MockSocket : MockHandle
     MOCK_METHOD(void, read, (), ());
     MOCK_METHOD(void, close, (), ());
 
-    MOCK_METHOD(void, saveReadHandler, (THandler<uvw::DataEvent>), ());
+    MOCK_METHOD(void, saveDataHandler, (THandler<uvw::DataEvent>), ());
     MOCK_METHOD(void, saveErrorHandler, (THandler<uvw::ErrorEvent>), ());
 
     template <typename E>
     void on(THandler<E> h) {
         if constexpr (std::is_same_v<E, uvw::DataEvent>) {
-            saveReadHandler(h);
+            saveDataHandler(h);
         }
         else if constexpr (std::is_same_v<E, uvw::ErrorEvent>) {
             saveErrorHandler(h);
