@@ -2,7 +2,7 @@
 # Dmitriy Vetutnev 2021
 
 cmake_minimum_required(VERSION 3.7)
-project(boost-di-example CXX)
+project(simple-server CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,7 +24,7 @@ find_package(libuv REQUIRED)
 find_package(uvw REQUIRED)
 find_package(GTest REQUIRED)
 
-include_directories(${CMAKE_SOURCE_DIR})
+include_directories(src)
 
 enable_testing()
 
