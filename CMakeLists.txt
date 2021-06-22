@@ -28,5 +28,4 @@ include_directories(${CMAKE_SOURCE_DIR})
 
 enable_testing()
 
-#add_subdirectory(test)
-
+add_subdirectory(test)
