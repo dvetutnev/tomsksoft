@@ -26,9 +26,6 @@ struct MockTimer : MockHandle
 
     MOCK_METHOD(void, saveHandler, (THandler<uvw::TimerEvent>), ());
 
-    //template <typename E>
-    //void on(THandler<E>);
-
     template <typename E>
     void on(THandler<E> h) { saveHandler(h); }
 };
