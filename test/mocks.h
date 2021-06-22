@@ -8,6 +8,19 @@
 #include <type_traits>
 
 
+class Session;
+
+struct MockServer
+{
+    MOCK_METHOD(void, remove, (Session*), ());
+};
+
+struct MockWriter
+{
+    MOCK_METHOD(void, push, (std::string&&), ());
+};
+
+
 struct MockHandle
 {
     template <typename E>
@@ -20,7 +33,6 @@ struct MockTimer : MockHandle
 {
     using Duration = std::chrono::steady_clock::duration;
 
-
     MOCK_METHOD(void, start, (Duration, Duration), ());
     MOCK_METHOD(void, again, (), ());
 
@@ -32,6 +44,9 @@ struct MockTimer : MockHandle
 
 struct MockSocket : MockHandle
 {
+    MOCK_METHOD(void, read, (), ());
+    MOCK_METHOD(void, close, (), ());
+
     MOCK_METHOD(void, saveReadHandler, (THandler<uvw::DataEvent>), ());
     MOCK_METHOD(void, saveErrorHandler, (THandler<uvw::ErrorEvent>), ());
 
