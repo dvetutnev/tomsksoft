@@ -5,13 +5,14 @@
 
 
 using ::testing::SaveArg;
+using ::testing::NiceMock;
 using ::testing::NotNull;
 using ::testing::InSequence;
 using ::testing::_;
 
 
 TEST(Writer, write) {
-    auto file = std::make_shared<MockFile>();
+    auto file = std::make_shared<NiceMock<MockFile>>();
 
     const std::string data = "asdfghjkl";
     std::unique_ptr<char[]> writenData = nullptr;
@@ -25,7 +26,7 @@ TEST(Writer, write) {
 }
 
 TEST(Writer, defer) {
-    auto file = std::make_shared<MockFile>();
+    auto file = std::make_shared<NiceMock<MockFile>>();
 
     MockHandle::THandler<uvw::FsEvent<uvw::FileReq::Type::WRITE>> handlerWriteEvent;
     EXPECT_CALL(*file, saveWriteHandler).WillOnce(SaveArg<0>(&handlerWriteEvent));
@@ -33,11 +34,9 @@ TEST(Writer, defer) {
     const std::string prevData = "aaaaaawergv";
     const std::string data = "111asdfghjkl";
     std::unique_ptr<char[]> writenData = nullptr;
-    {
-        InSequence _;
-        EXPECT_CALL(*file, write).Times(1);
-        EXPECT_CALL(*file, write(NotNull(), data.size(), prevData.size())).WillOnce( [&writenData] (std::unique_ptr<char[]> p, auto, auto) { writenData = std::move(p); } );
-    }
+
+    EXPECT_CALL(*file, write).Times(1);
+    EXPECT_CALL(*file, write(NotNull(), data.size(), prevData.size())).WillOnce( [&writenData] (std::unique_ptr<char[]> p, auto, auto) { writenData = std::move(p); } );
 
     Writer<MockFile> writer{file};
     writer.push(prevData);

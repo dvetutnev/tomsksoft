@@ -21,6 +21,8 @@ private:
     void writeToFile(const std::string&);
     void closeFile();
 
+    std::int64_t offset = 0;
+
     struct DefFSM
     {
         explicit DefFSM(Writer& w) : writer{w} {}
@@ -39,7 +41,7 @@ private:
             return make_transition_table(
                 *"Wait"_s          + event<DataEvent> / write = "Write"_s,
                  "Write"_s     + event<DataEvent> / defer,
-                 "Write"_s   + event<WrittenEvent>          = "Wait"_s
+                 "Write"_s   + event<WrittenEvent>         = "Wait"_s
             );
         }
 
@@ -58,7 +60,14 @@ Writer<File>::Writer(std::shared_ptr<File> f)
 
       defFsm{*this},
       fsm{defFsm}
-{}
+{
+    using WriteEvent = uvw::FsEvent<uvw::FileReq::Type::WRITE>;
+    auto writeHandler = [this] (const WriteEvent& e, auto&) {
+        offset += e.size;
+        fsm.process_event(typename DefFSM::WrittenEvent{});
+    };
+    file->template on<WriteEvent>(writeHandler);
+}
 
 template <typename File>
 void Writer<File>::push(const std::string& d) {
@@ -70,7 +79,7 @@ template <typename File>
 void Writer<File>::writeToFile(const std::string& data) {
     auto d = std::make_unique<char[]>(data.size());
     std::copy_n(std::begin(data), data.size(), d.get());
-    file->write(std::move(d), data.size(), 0);
+    file->write(std::move(d), data.size(), offset);
 }
 
 template <typename File>
