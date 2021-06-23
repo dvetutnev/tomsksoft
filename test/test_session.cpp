@@ -21,6 +21,7 @@ TEST(Session, timeout) {
     {
         InSequence _;
         EXPECT_CALL(*client, read).Times(1);
+        EXPECT_CALL(*client, stop).Times(1);
         EXPECT_CALL(*client, close).Times(1);
     }
 
@@ -32,10 +33,14 @@ TEST(Session, timeout) {
         InSequence _;
         EXPECT_CALL(*timer, start).Times(1);
         EXPECT_CALL(*timer, stop).Times(1);
+        EXPECT_CALL(*timer, close).Times(1);
     }
 
     Session<MockServer, MockWriter, MockSocket, MockTimer> session{server, writer, client, timer};
 
     //SessionBase* sessionPtr = nullptr;
     //EXPECT_CALL(server, remove).WillOnce(SaveArg<0>(&sessionPtr));
+
+    // Послать 3 байта
+    // Послать эвент таймера
 }
