@@ -63,3 +63,8 @@ struct MockSocket : MockHandle
         }
     }
 };
+
+struct MockFile
+{
+    MOCK_METHOD(void, write, (std::unique_ptr<char[]>, unsigned int, std::int64_t));
+};

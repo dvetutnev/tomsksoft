@@ -2,6 +2,9 @@
 
 
 using ::testing::SaveArg;
+using ::testing::NotNull;
+using ::testing::Unused;
+using ::testing::_;
 
 
 namespace {
@@ -58,4 +61,17 @@ TEST(MockTimer, saveHandler) {
     mock.on<uvw::TimerEvent>(handlerTimerEvent);
 
     savedHandlerTimerEvent(uvw::TimerEvent{}, mock);
+}
+
+TEST(MockFile, _) {
+    MockFile mock;
+
+    std::unique_ptr<char[]> saved = nullptr;
+    EXPECT_CALL(mock, write(NotNull(), 42, 43)).WillOnce( [&saved] (std::unique_ptr<char[]> p, Unused, Unused) { saved = std::move(p); } );
+
+    auto p = std::make_unique<char[]>(37);
+    auto pRaw = p.get();
+    mock.write(std::move(p), 42, 43);
+
+    ASSERT_EQ(saved.get(), pRaw);
 }
