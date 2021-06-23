@@ -15,9 +15,7 @@ TEST(Session, timeout) {
     auto client = std::make_shared<NiceMock<MockSocket>>();
 
     MockHandle::THandler<uvw::DataEvent> handlerDataEvent;
-    //MockHandle::THandler<uvw::ErrorEvent> handlerErrorEvent;
     EXPECT_CALL(*client, saveDataHandler).WillOnce(SaveArg<0>(&handlerDataEvent));
-    //EXPECT_CALL(*client, saveErrorHandler).WillOnce(SaveArg<0>(&handlerErrorEvent));
     {
         InSequence _;
         EXPECT_CALL(*client, read).Times(1);
@@ -38,9 +36,9 @@ TEST(Session, timeout) {
 
     Session<MockServer, MockWriter, MockSocket, MockTimer> session{server, writer, client, timer};
 
-    //SessionBase* sessionPtr = nullptr;
-    //EXPECT_CALL(server, remove).WillOnce(SaveArg<0>(&sessionPtr));
+    EXPECT_CALL(server, remove(&session)).Times(1);
 
-    // Послать 3 байта
-    // Послать эвент таймера
+    uvw::DataEvent dataEvent{std::make_unique<char[]>(3), 3};;
+    handlerDataEvent(dataEvent, *client);
+    handlerTimerEvent(uvw::TimerEvent{}, *timer);
 }

@@ -67,7 +67,9 @@ private:
 
             return make_transition_table(
                        *"Wait init"_s      + event<InitEvent> / init               = "Wait header"_s,
-                        "Receive header"_s + event<ByteEvent> / pushToHeaderBuffer = "Is header complete"_s
+                        "Receive header"_s + event<ByteEvent> / pushToHeaderBuffer = "Is header complete"_s,
+
+                       *"In work"_s        + event<HaltEvent> / halt               = X
             );
         }
 
@@ -98,7 +100,7 @@ Session<Server, Writer, Socket, Timer>::Session(Server& s, Writer& w, std::share
     client->template on<uvw::ErrorEvent>(errorHandler);
 
 
-    auto timeoutHandler = [] (const uvw::TimerEvent&, auto&) {};
+    auto timeoutHandler = [this] (const uvw::TimerEvent&, auto&) { fsm.process_event(typename DefFSM::HaltEvent{}); };
 
     timer->template on<uvw::TimerEvent>(timeoutHandler);
 
@@ -158,4 +160,6 @@ void Session<Server, Writer, Socket, Timer>::halt() {
 
     timer->stop();
     timer->close();
+
+    server.remove(this);
 };
