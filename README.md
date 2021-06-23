@@ -21,7 +21,7 @@
 
 Машина состояний:
 
-![Session state machine](doc/session_state_machine.jpg)
+![Session state machine](doc/session_fsm.jpg)
 
 Структура сессии:
 
