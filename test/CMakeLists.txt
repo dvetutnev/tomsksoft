@@ -1,5 +1,6 @@
 add_executable(tests
     sml/test_session.cpp
+    sml/test_defer.cpp
     test_mocks.cpp
     test_session.cpp)
 
