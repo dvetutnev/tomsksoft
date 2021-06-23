@@ -64,7 +64,20 @@ struct MockSocket : MockHandle
     }
 };
 
-struct MockFile
+struct MockFile : MockHandle
 {
     MOCK_METHOD(void, write, (std::unique_ptr<char[]>, unsigned int, std::int64_t));
+
+    MOCK_METHOD(void, saveWriteHandler, (THandler<uvw::FsEvent<uvw::FileReq::Type::WRITE>>), ());
+    MOCK_METHOD(void, saveErrorHandler, (THandler<uvw::ErrorEvent>), ());
+
+    template <typename E>
+    void on(THandler<E> h) {
+        if constexpr (std::is_same_v<E, uvw::FsEvent<uvw::FileReq::Type::WRITE>>) {
+            saveWriteHandler(h);
+        }
+        else if constexpr (std::is_same_v<E, uvw::ErrorEvent>) {
+            saveErrorHandler(h);
+        }
+    }
 };
