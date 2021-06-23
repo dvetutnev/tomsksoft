@@ -143,4 +143,79 @@ Session<Server, Writer, Socket, Timer>::Session(Server& s, Writer& w, std::share
 
 ![Writer FSM](doc/writer_fsm.jpg)
 
-И тут опять очень пригодились возможности state-машины: если во время записи прилетит еще один эвент, то он поместиться в очередь. По завершению записи данных предыдущего эвента отложенный эвент извлекается из очереди (если их несколько прилетело, то сохраняется порядок) и обрабатывается. И все это происходит автоматически)) Открытие файла будет для упрощения синхронным (при инстанционировании класса Writer). Разумеется можно прикрутить открытие файла по приходу первого эвента с данными, но для экономии времени на текущий момент реализовавать такую штуку не буду.
+И тут опять очень пригодились возможности state-машины: если во время записи прилетит еще один эвент, то он поместиться в очередь. По завершению записи данных предыдущего эвента отложенный эвент извлекается из очереди (если их несколько прилетело, то сохраняется порядок) и обрабатывается. И все это происходит автоматически)) Открытие файла будет для упрощения синхронным (при инстанционировании класса Writer), обработка ошибок ФС - **std::abort** (пусть с этим разбирается то, что запустило этот сервер, на уровне возникновения проблема не решается). Разумеется можно прикрутить открытие файла по приходу первого эвента с данными, но для экономии времени на текущий момент реализовавать такую штуку не буду. Реализация:
+
+```cpp
+template <typename File>
+class Writer
+{
+public:
+    Writer(std::shared_ptr<File>);
+
+    void push(const std::string&);
+    void shutdown();
+
+private:
+    std::shared_ptr<File> file;
+
+    void writeToFile(const std::string&);
+    void closeFile();
+
+    std::int64_t offset = 0;
+
+    struct DefFSM
+    {
+        explicit DefFSM(Writer& w) : writer{w} {}
+
+        struct DataEvent { std::string data; };
+        struct WrittenEvent {};
+        struct ShutdownEvent {};
+
+        auto operator()() const {
+
+            auto write = [this] (const DataEvent& e) { writer.writeToFile(e.data); };
+            auto close = [this] (const ShutdownEvent&) { writer.closeFile(); };
+
+            using namespace boost::sml;
+
+            return make_transition_table(
+                *"Wait"_s   + event<DataEvent>      / write = "Write"_s,
+                 "Wait"_s   + event<ShutdownEvent>  / close = X,
+                 "Write"_s  + event<DataEvent>      / defer,
+                 "Write"_s  + event<ShutdownEvent>  / defer,
+                 "Write"_s  + event<WrittenEvent>           = "Wait"_s
+            );
+        }
+
+        Writer& writer;
+    };
+
+    DefFSM defFsm;
+    boost::sml::sm<DefFSM, boost::sml::defer_queue<std::deque>> fsm;
+};
+```
+
+Благодаря state-машине довольно легко реализовалось *чистое* завершение, после вызова метода **shutdown** Writer перестает принимать входящие сообщения, дописывает в файл то, что ему накидали (лежит в очереди state-машины) и закрывает файл. Подтверждающий тест:
+
+```cpp
+TEST(Writer, shutdown) {
+    auto file = std::make_shared<NiceMock<MockFile>>();
+
+    MockHandle::THandler<uvw::FsEvent<uvw::FileReq::Type::WRITE>> handlerWriteEvent;
+    EXPECT_CALL(*file, saveWriteHandler).WillOnce(SaveArg<0>(&handlerWriteEvent));
+    {
+        InSequence _;
+        EXPECT_CALL(*file, write).Times(1);
+        EXPECT_CALL(*file, close).Times(1);
+    }
+
+    Writer<MockFile> writer{file};
+
+    writer.push("aaaa");
+    writer.shutdown();
+    writer.push("bbbb");
+
+    uvw::FsEvent<uvw::FileReq::Type::WRITE> event{"file.txt", 4};
+    handlerWriteEvent(event, *file);
+}
+```
