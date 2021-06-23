@@ -53,6 +53,24 @@ TEST(Boost_SML, defer) {
         InSequence _;
         EXPECT_CALL(mock, write(1));
         EXPECT_CALL(mock, write(2));
+    }
+
+    DefFSM defFSM{mock};
+    boost::sml::sm<DefFSM, boost::sml::defer_queue<std::deque>> fsm{defFSM};
+
+    fsm.process_event(DataEvent{1});
+    fsm.process_event(DataEvent{2});
+    fsm.process_event(WrittenEvent{});
+    fsm.process_event(WrittenEvent{});
+}
+
+TEST(Boost_SML, ignoreDataEventAfterShutdown) {
+    StrictMock<Mock> mock;
+    {
+        InSequence _;
+        EXPECT_CALL(mock, write(1));
+        EXPECT_CALL(mock, write(2));
+        EXPECT_CALL(mock, write).Times(0);
         EXPECT_CALL(mock, close);
     }
 
@@ -62,6 +80,7 @@ TEST(Boost_SML, defer) {
     fsm.process_event(DataEvent{1});
     fsm.process_event(DataEvent{2});
     fsm.process_event(ShutdownEvent{});
+    fsm.process_event(DataEvent{3});
     fsm.process_event(WrittenEvent{});
     fsm.process_event(WrittenEvent{});
 }
