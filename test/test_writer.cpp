@@ -70,3 +70,15 @@ TEST(Writer, shutdown) {
     uvw::FsEvent<uvw::FileReq::Type::WRITE> event{"file.txt", 4};
     handlerWriteEvent(event, *file);
 }
+
+TEST(Writer, error) {
+    auto file = std::make_shared<NiceMock<MockFile>>();
+
+    MockHandle::THandler<uvw::ErrorEvent> handlerErrorEvent;
+    EXPECT_CALL(*file, saveErrorHandler).WillOnce(SaveArg<0>(&handlerErrorEvent));
+
+    Writer<MockFile> writer{file};
+
+    uvw::ErrorEvent e{static_cast<std::underlying_type_t<uv_errno_t>>(UV_EFAULT)};
+    ASSERT_DEATH({ handlerErrorEvent(e, *file); }, "");
+}

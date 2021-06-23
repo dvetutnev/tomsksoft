@@ -70,6 +70,9 @@ Writer<File>::Writer(std::shared_ptr<File> f)
         fsm.process_event(typename DefFSM::WrittenEvent{});
     };
     file->template on<WriteEvent>(writeHandler);
+
+    auto errorHandler = [] (const uvw::ErrorEvent&, auto&) { std::abort(); };
+    file->template on<uvw::ErrorEvent>(errorHandler);
 }
 
 
