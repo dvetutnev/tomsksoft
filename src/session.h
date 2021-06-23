@@ -93,8 +93,8 @@ Session<Server, Writer, Socket, Timer>::Session(Server& s, Writer& w, std::share
       defFsm{*this},
       fsm{defFsm}
 {
-    auto dataHandler = [] (const uvw::DataEvent&, auto&) {};
-    auto errorHandler = [] (const uvw::ErrorEvent&, auto&) {};
+    auto dataHandler = [this] (const uvw::DataEvent&, auto&) {};
+    auto errorHandler = [this] (const uvw::ErrorEvent&, auto&) { fsm.process_event(typename DefFSM::HaltEvent{}); };
 
     client->template on<uvw::DataEvent>(dataHandler);
     client->template on<uvw::ErrorEvent>(errorHandler);
