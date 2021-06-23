@@ -66,17 +66,17 @@ private:
             using namespace boost::sml;
 
             return make_transition_table(
-                       *"Wait init"_s          + event<InitEvent> / init                     = "Receive header"_s,
-                        "Receive header"_s     + event<ByteEvent> / pushToHeaderBuffer       = "Is header complete"_s,
-                        "Is header complete"_s   [ !isHeaderComplete ]                       = "Receive header"_s,
-                        "Is header complete"_s   [ isHeaderComplete  ]                       = "Process header"_s,
-                        "Process header"_s                        / processHeader            = "Receive data"_s,
-                        "Receive data"_s       + event<ByteEvent> / pushToDataBuffer         = "Is data complete"_s,
-                        "Is data complete"_s     [ !isDataComplete ]                         = "Receive data"_s,
-                        "Is data complete"_s     [ isDataComplete  ]                         = "Process result"_s,
-                        "Process result"_s                        / (processResult, restart) = "Receive header"_s,
+                *"Wait init"_s          + event<InitEvent> / init                     = "Receive header"_s,
+                 "Receive header"_s     + event<ByteEvent> / pushToHeaderBuffer       = "Is header complete"_s,
+                 "Is header complete"_s   [ !isHeaderComplete ]                       = "Receive header"_s,
+                 "Is header complete"_s   [ isHeaderComplete  ]                       = "Process header"_s,
+                 "Process header"_s                        / processHeader            = "Receive data"_s,
+                 "Receive data"_s       + event<ByteEvent> / pushToDataBuffer         = "Is data complete"_s,
+                 "Is data complete"_s     [ !isDataComplete ]                         = "Receive data"_s,
+                 "Is data complete"_s     [ isDataComplete  ]                         = "Process result"_s,
+                 "Process result"_s                        / (processResult, restart) = "Receive header"_s,
 
-                       *"In work"_s            + event<HaltEvent> / halt                     = X
+                *"In work"_s            + event<HaltEvent> / halt                     = X
             );
         }
 
