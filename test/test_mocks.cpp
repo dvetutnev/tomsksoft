@@ -11,13 +11,14 @@ struct MockHandler
 {
     MOCK_METHOD(void, onDataEvent, (const uvw::DataEvent&), ());
     MOCK_METHOD(void, onErrorEvent, (const uvw::ErrorEvent&), ());
+    MOCK_METHOD(void, onTimerEvent, (const uvw::TimerEvent&), ());
 };
 
 
-} //Anonymous namespace
+} // Anonymous namespace
 
 
-TEST(MockSocket, save_handler) {
+TEST(MockSocket, saveHandler) {
     MockHandler handler;
 
     EXPECT_CALL(handler, onDataEvent).Times(1);
@@ -39,4 +40,22 @@ TEST(MockSocket, save_handler) {
 
     savedHandlerDataEvent(uvw::DataEvent{nullptr, 0}, mock);
     savedHandlerErrorEvent(uvw::ErrorEvent{static_cast<std::underlying_type_t<uv_errno_t>>(UV_EFAULT)}, mock);
+}
+
+TEST(MockTimer, saveHandler) {
+    MockHandler handler;
+
+    EXPECT_CALL(handler, onTimerEvent).Times(1);
+
+    MockHandle::THandler<uvw::TimerEvent> handlerTimerEvent = [&handler](const uvw::TimerEvent& e, auto&) { handler.onTimerEvent(e); };
+
+    MockTimer mock;
+
+    MockHandle::THandler<uvw::TimerEvent> savedHandlerTimerEvent = nullptr;
+
+    EXPECT_CALL(mock, saveHandler).WillOnce(SaveArg<0>(&savedHandlerTimerEvent));
+
+    mock.on<uvw::TimerEvent>(handlerTimerEvent);
+
+    savedHandlerTimerEvent(uvw::TimerEvent{}, mock);
 }
