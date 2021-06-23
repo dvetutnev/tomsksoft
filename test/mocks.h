@@ -17,7 +17,7 @@ struct MockServer
 
 struct MockWriter
 {
-    MOCK_METHOD(void, push, (std::string&&), ());
+    MOCK_METHOD(void, push, (const std::string&), ());
 };
 
 

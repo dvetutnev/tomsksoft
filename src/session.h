@@ -66,10 +66,17 @@ private:
             using namespace boost::sml;
 
             return make_transition_table(
-                       *"Wait init"_s      + event<InitEvent> / init               = "Wait header"_s,
-                        "Receive header"_s + event<ByteEvent> / pushToHeaderBuffer = "Is header complete"_s,
+                       *"Wait init"_s          + event<InitEvent> / init               = "Receive header"_s,
+                        "Receive header"_s     + event<ByteEvent> / pushToHeaderBuffer = "Is header complete"_s,
+                        "Is header complete"_s   [ !isHeaderComplete ]                 = "Receive header"_s,
+                        "Is header complete"_s   [ isHeaderComplete  ]                 = "Process header"_s,
+                        "Process header"_s                        / processHeader      = "Receive data"_s,
+                        "Receive data"_s       + event<ByteEvent> / pushToDataBuffer   = "Is data complete"_s,
+                        "Is data complete"_s     [ !isDataComplete ]                   = "Receive data"_s,
+                        "Is data complete"_s     [ isDataComplete  ]                   = "Process result"_s,
+                        "Process result"_s                        / processResult      = X,
 
-                       *"In work"_s        + event<HaltEvent> / halt               = X
+                       *"In work"_s            + event<HaltEvent> / halt               = X
             );
         }
 
@@ -93,17 +100,19 @@ Session<Server, Writer, Socket, Timer>::Session(Server& s, Writer& w, std::share
       defFsm{*this},
       fsm{defFsm}
 {
-    auto dataHandler = [this] (const uvw::DataEvent&, auto&) {};
-    auto errorHandler = [this] (const uvw::ErrorEvent&, auto&) { fsm.process_event(typename DefFSM::HaltEvent{}); };
-
+    auto dataHandler = [this] (const uvw::DataEvent& e, auto&) {
+        for (std::size_t i = 0; i < e.length; i++) {
+            typename DefFSM::ByteEvent byteEvent{e.data[i]};
+            fsm.process_event(byteEvent);
+        }
+    };
     client->template on<uvw::DataEvent>(dataHandler);
+
+    auto errorHandler = [this] (const uvw::ErrorEvent&, auto&) { fsm.process_event(typename DefFSM::HaltEvent{}); };
     client->template on<uvw::ErrorEvent>(errorHandler);
 
-
     auto timeoutHandler = [this] (const uvw::TimerEvent&, auto&) { fsm.process_event(typename DefFSM::HaltEvent{}); };
-
     timer->template on<uvw::TimerEvent>(timeoutHandler);
-
 
     fsm.process_event(typename DefFSM::InitEvent{});
 }
@@ -142,13 +151,13 @@ bool Session<Server, Writer, Socket, Timer>::isDataComplete() const {
 
 template <typename Server, typename Writer, typename Socket, typename Timer>
 void Session<Server, Writer, Socket, Timer>::processResult() {
-    writer.push(std::move(dataBuffer));
+    writer.push(dataBuffer);
 };
 
 template <typename Server, typename Writer, typename Socket, typename Timer>
 void Session<Server, Writer, Socket, Timer>::restart() {
-    headerBuffer.clear();
-    dataBuffer.clear();
+    //headerBuffer.clear();
+    //dataBuffer.clear();
 
     timer->again();
 };

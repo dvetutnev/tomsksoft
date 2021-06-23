@@ -59,10 +59,3 @@ TEST(MockTimer, saveHandler) {
 
     savedHandlerTimerEvent(uvw::TimerEvent{}, mock);
 }
-
-TEST(MockWriter, push) {
-    MockWriter mock;
-    const std::string data = "0123456789";
-    EXPECT_CALL(mock, push_rvr(data)).Times(1);
-    mock.push(std::string{data});
-}
