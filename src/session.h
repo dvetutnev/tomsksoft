@@ -35,10 +35,10 @@ private:
 
     void init();
     void pushToHeaderBuffer(char);
-    bool isHeaderComplete();
+    bool isHeaderComplete() const;
     void processHeader();
     void pushToDataBuffer(char);
-    bool isDataComplete();
+    bool isDataComplete() const;
     void processResult();
     void restart();
     void halt();
@@ -119,7 +119,7 @@ void Session<Server, Writer, Socket, Timer>::pushToHeaderBuffer(char c) {
 };
 
 template <typename Server, typename Writer, typename Socket, typename Timer>
-bool Session<Server, Writer, Socket, Timer>::isHeaderComplete() {
+bool Session<Server, Writer, Socket, Timer>::isHeaderComplete() const {
     return headerBuffer.size() == 4;
 };
 
@@ -134,7 +134,7 @@ void Session<Server, Writer, Socket, Timer>::pushToDataBuffer(char c) {
 };
 
 template <typename Server, typename Writer, typename Socket, typename Timer>
-bool Session<Server, Writer, Socket, Timer>::isDataComplete() {
+bool Session<Server, Writer, Socket, Timer>::isDataComplete() const {
     return dataBuffer.size() == dataLength;
 };
 
