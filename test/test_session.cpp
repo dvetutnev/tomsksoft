@@ -8,6 +8,7 @@ using ::testing::SaveArg;
 using ::testing::InSequence;
 using ::testing::StrictMock;
 using ::testing::NiceMock;
+using ::testing::AtLeast;
 
 
 TEST(Session, timeout) {
@@ -106,4 +107,48 @@ TEST(Session, normal) {
     EXPECT_CALL(writer, push(data)).Times(1);
 
     handlerDataEvent(dataEvent, *client);
+}
+
+TEST(Session, repeat) {
+    StrictMock<MockServer> server;
+    MockWriter writer;
+
+    auto client = std::make_shared<NiceMock<MockSocket>>();
+
+    MockHandle::THandler<uvw::DataEvent> handlerDataEvent;
+    EXPECT_CALL(*client, saveDataHandler).WillOnce(SaveArg<0>(&handlerDataEvent));
+    EXPECT_CALL(*client, read).Times(1);
+
+    auto timer = std::make_shared<NiceMock<MockTimer>>();
+    EXPECT_CALL(*timer, start).Times(1);
+    EXPECT_CALL(*timer, again).Times(AtLeast(1));
+
+    Session<MockServer, MockWriter, MockSocket, MockTimer> session{server, writer, client, timer};
+
+    auto createPacket = [](const std::string& data) -> uvw::DataEvent {
+        std::uint32_t header = ::htonl(data.size());
+        std::size_t packetLength = sizeof(header) + data.size();
+
+        uvw::DataEvent packet{std::make_unique<char[]>(packetLength), packetLength};;
+
+        std::copy_n(reinterpret_cast<const char*>(&header), sizeof(header), packet.data.get());
+        std::copy_n(data.data(), data.size(), packet.data.get() + sizeof(header));
+
+        return packet;
+    };
+
+    const std::string data1 = "abcdefqwert";
+    auto packet1 = createPacket(data1);
+
+    const std::string data2 = "42abcdefqwert";
+    auto packet2 = createPacket(data2);
+
+    {
+        InSequence _;
+        EXPECT_CALL(writer, push(data1)).Times(1);
+        EXPECT_CALL(writer, push(data2)).Times(1);
+    }
+
+    handlerDataEvent(packet1, *client);
+    handlerDataEvent(packet2, *client);
 }
