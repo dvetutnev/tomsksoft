@@ -39,6 +39,7 @@ TEST(Writer, defer) {
     EXPECT_CALL(*file, write(NotNull(), data.size(), prevData.size())).WillOnce( [&writenData] (std::unique_ptr<char[]> p, auto, auto) { writenData = std::move(p); } );
 
     Writer<MockFile> writer{file};
+
     writer.push(prevData);
     writer.push(data);
 
@@ -47,4 +48,25 @@ TEST(Writer, defer) {
 
     ASSERT_TRUE(writenData);
     ASSERT_TRUE(std::equal(std::begin(data), std::end(data), writenData.get()));
+}
+
+TEST(Writer, shutdown) {
+    auto file = std::make_shared<NiceMock<MockFile>>();
+
+    MockHandle::THandler<uvw::FsEvent<uvw::FileReq::Type::WRITE>> handlerWriteEvent;
+    EXPECT_CALL(*file, saveWriteHandler).WillOnce(SaveArg<0>(&handlerWriteEvent));
+    {
+        InSequence _;
+        EXPECT_CALL(*file, write).Times(1);
+        EXPECT_CALL(*file, close).Times(1);
+    }
+
+    Writer<MockFile> writer{file};
+
+    writer.push("aaaa");
+    writer.shutdown();
+    writer.push("bbbb");
+
+    uvw::FsEvent<uvw::FileReq::Type::WRITE> event{"file.txt", 4};
+    handlerWriteEvent(event, *file);
 }

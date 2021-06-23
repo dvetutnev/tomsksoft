@@ -14,6 +14,7 @@ public:
     Writer(std::shared_ptr<File>);
 
     void push(const std::string&);
+    void shutdown();
 
 private:
     std::shared_ptr<File> file;
@@ -39,9 +40,11 @@ private:
             using namespace boost::sml;
 
             return make_transition_table(
-                *"Wait"_s          + event<DataEvent> / write = "Write"_s,
-                 "Write"_s     + event<DataEvent> / defer,
-                 "Write"_s   + event<WrittenEvent>         = "Wait"_s
+                *"Wait"_s   + event<DataEvent>      / write = "Write"_s,
+                 "Wait"_s   + event<ShutdownEvent>  / close = X,
+                 "Write"_s  + event<DataEvent>      / defer,
+                 "Write"_s  + event<ShutdownEvent>  / defer,
+                 "Write"_s  + event<WrittenEvent>           = "Wait"_s
             );
         }
 
@@ -69,11 +72,19 @@ Writer<File>::Writer(std::shared_ptr<File> f)
     file->template on<WriteEvent>(writeHandler);
 }
 
+
 template <typename File>
 void Writer<File>::push(const std::string& d) {
     typename DefFSM::DataEvent e{d};
     fsm.process_event(e);
 }
+
+template <typename File>
+void Writer<File>::shutdown() {
+    typename DefFSM::ShutdownEvent e;
+    fsm.process_event(e);
+}
+
 
 template <typename File>
 void Writer<File>::writeToFile(const std::string& data) {
@@ -84,5 +95,5 @@ void Writer<File>::writeToFile(const std::string& data) {
 
 template <typename File>
 void Writer<File>::closeFile() {
-
+    file->close();
 }
