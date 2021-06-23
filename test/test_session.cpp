@@ -78,7 +78,7 @@ TEST(Session, networkError) {
 
     uvw::DataEvent dataEvent{std::make_unique<char[]>(3), 3};;
     handlerDataEvent(dataEvent, *client);
-    handlerErrorEvent(uvw::ErrorEvent{static_cast<std::underlying_type_t<uv_errno_t>>(UV_EFAULT)}, *timer);
+    handlerErrorEvent(uvw::ErrorEvent{static_cast<std::underlying_type_t<uv_errno_t>>(UV_EFAULT)}, *client);
 }
 
 TEST(Session, normal) {
