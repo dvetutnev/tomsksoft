@@ -29,4 +29,18 @@ include_directories(src)
 
 enable_testing()
 
+add_executable(tomsksoft-server src/server.cpp)
+target_link_libraries(tomsksoft-server
+    sml::sml
+    uvw::uvw
+    libuv::libuv
+    nlohmann_json::nlohmann_json)
+
+add_executable(tomsksoft-client src/client.cpp)
+target_link_libraries(tomsksoft-client
+    sml::sml
+    uvw::uvw
+    libuv::libuv
+    nlohmann_json::nlohmann_json)
+
 add_subdirectory(test)

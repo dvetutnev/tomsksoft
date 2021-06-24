@@ -26,3 +26,7 @@ inline Config parseConfig(const std::filesystem::path& path) {
 
     return Config{std::move(address), port, std::move(log)};
 }
+
+inline Config defaultConfig() {
+    return Config{"127.0.0.1", 6789, "log.txt"};
+}

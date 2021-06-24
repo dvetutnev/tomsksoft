@@ -56,7 +56,7 @@ inline Server::Server(uvw::Loop& loop, std::string ip, unsigned int port, const 
     };
     listener->on<uvw::ErrorEvent>(onError);
 
-    listener->bind("127.0.0.1", 4242);
+    listener->bind(ip, port);
     listener->listen();
 
     auto file = loop.resource<uvw::FileReq>();
