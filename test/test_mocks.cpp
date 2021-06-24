@@ -15,6 +15,7 @@ struct MockHandler
     MOCK_METHOD(void, onDataEvent, (const uvw::DataEvent&), ());
     MOCK_METHOD(void, onErrorEvent, (const uvw::ErrorEvent&), ());
     MOCK_METHOD(void, onTimerEvent, (const uvw::TimerEvent&), ());
+    MOCK_METHOD(void, onEndEvent, (const uvw::EndEvent&), ());
 };
 
 
@@ -26,23 +27,29 @@ TEST(MockSocket, saveHandler) {
 
     EXPECT_CALL(handler, onDataEvent).Times(1);
     EXPECT_CALL(handler, onErrorEvent).Times(1);
+    EXPECT_CALL(handler, onEndEvent).Times(1);
 
     MockHandle::THandler<uvw::DataEvent> handlerDataEvent = [&handler](const uvw::DataEvent& e, auto&) { handler.onDataEvent(e); };
     MockHandle::THandler<uvw::ErrorEvent> handlerErrorEvent = [&handler](const uvw::ErrorEvent& e, auto&) { handler.onErrorEvent(e); };
+    MockHandle::THandler<uvw::EndEvent> handlerEndEvent = [&handler](const uvw::EndEvent& e, auto&) { handler.onEndEvent(e); };
 
     MockSocket mock;
 
     MockHandle::THandler<uvw::DataEvent> savedHandlerDataEvent = nullptr;
     MockHandle::THandler<uvw::ErrorEvent> savedHandlerErrorEvent = nullptr;
+    MockHandle::THandler<uvw::EndEvent> savedHandlerEndEvent = nullptr;
 
     EXPECT_CALL(mock, saveDataHandler).WillOnce(SaveArg<0>(&savedHandlerDataEvent));
     EXPECT_CALL(mock, saveErrorHandler).WillOnce(SaveArg<0>(&savedHandlerErrorEvent));
+    EXPECT_CALL(mock, saveEndHandler).WillOnce(SaveArg<0>(&savedHandlerEndEvent));
 
     mock.on<uvw::DataEvent>(handlerDataEvent);
     mock.on<uvw::ErrorEvent>(handlerErrorEvent);
+    mock.on<uvw::EndEvent>(handlerEndEvent);
 
     savedHandlerDataEvent(uvw::DataEvent{nullptr, 0}, mock);
     savedHandlerErrorEvent(uvw::ErrorEvent{static_cast<std::underlying_type_t<uv_errno_t>>(UV_EFAULT)}, mock);
+    savedHandlerEndEvent(uvw::EndEvent{}, mock);
 }
 
 TEST(MockTimer, saveHandler) {

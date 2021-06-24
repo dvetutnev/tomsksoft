@@ -52,7 +52,7 @@ struct MockSocket : MockHandle
 
     MOCK_METHOD(void, saveDataHandler, (THandler<uvw::DataEvent>), ());
     MOCK_METHOD(void, saveErrorHandler, (THandler<uvw::ErrorEvent>), ());
-    MOCK_METHOD(void, saveEndHandler, (THandler<uvw::CloseEvent>), ());
+    MOCK_METHOD(void, saveEndHandler, (THandler<uvw::EndEvent>), ());
 
     template <typename E>
     void on(THandler<E> h) {
