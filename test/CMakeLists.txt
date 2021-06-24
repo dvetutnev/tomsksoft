@@ -3,7 +3,13 @@ add_executable(tests
     sml/test_defer.cpp
     test_mocks.cpp
     test_session.cpp
-    test_writer.cpp)
+    test_writer.cpp
+    test_uvw.cpp)
 
-target_link_libraries(tests sml::sml uvw::uvw GTest::gmock_main)
+target_link_libraries(tests
+    sml::sml
+    uvw::uvw
+    libuv::libuv
+    GTest::gmock_main)
+
 add_test(NAME tests COMMAND tests)
