@@ -4,11 +4,18 @@
 #include <uvw.hpp>
 #include <gtest/gtest.h>
 
+#include <fstream>
+
 
 TEST(Functional, _) {
+    const std::filesystem::path path = "log.txt";
+    if (std::filesystem::exists(path)) {
+        std::filesystem::remove(path);
+    }
+
     auto loop = uvw::Loop::getDefault();
 
-    Server server{*loop, "127.0.0.1", 4242, "log.txt"};
+    Server server{*loop, "127.0.0.1", 4242, path};
 
     auto socket = loop->resource<uvw::TCPHandle>();
     auto onConnect = [](const uvw::ConnectEvent&, uvw::TCPHandle& socket){
@@ -35,4 +42,11 @@ TEST(Functional, _) {
 
 
     loop->run();
+
+
+    std::fstream file{path};
+    std::string log;
+    file >> log;
+
+    ASSERT_EQ(log, "sTRINg");
 }
