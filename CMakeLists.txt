@@ -22,6 +22,7 @@ conan_cmake_install(
 find_package(sml REQUIRED)
 find_package(libuv REQUIRED)
 find_package(uvw REQUIRED)
+find_package(nlohmann_json REQUIRED)
 find_package(GTest REQUIRED)
 
 include_directories(src)

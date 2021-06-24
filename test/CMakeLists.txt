@@ -5,12 +5,14 @@ add_executable(tests
     test_session.cpp
     test_writer.cpp
     test_uvw.cpp
-    test_functional.cpp)
+    test_functional.cpp
+    test_parse_config.cpp)
 
 target_link_libraries(tests
     sml::sml
     uvw::uvw
     libuv::libuv
+    nlohmann_json::nlohmann_json
     GTest::gmock_main)
 
 add_test(NAME tests COMMAND tests)
