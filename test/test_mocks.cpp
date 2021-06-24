@@ -25,9 +25,9 @@ struct MockHandler
 TEST(MockSocket, saveHandler) {
     MockHandler handler;
 
-    EXPECT_CALL(handler, onDataEvent).Times(1);
-    EXPECT_CALL(handler, onErrorEvent).Times(1);
-    EXPECT_CALL(handler, onEndEvent).Times(1);
+    EXPECT_CALL(handler, onDataEvent);
+    EXPECT_CALL(handler, onErrorEvent);
+    EXPECT_CALL(handler, onEndEvent);
 
     MockHandle::THandler<uvw::DataEvent> handlerDataEvent = [&handler](const uvw::DataEvent& e, auto&) { handler.onDataEvent(e); };
     MockHandle::THandler<uvw::ErrorEvent> handlerErrorEvent = [&handler](const uvw::ErrorEvent& e, auto&) { handler.onErrorEvent(e); };
@@ -55,7 +55,7 @@ TEST(MockSocket, saveHandler) {
 TEST(MockTimer, saveHandler) {
     MockHandler handler;
 
-    EXPECT_CALL(handler, onTimerEvent).Times(1);
+    EXPECT_CALL(handler, onTimerEvent);
 
     MockHandle::THandler<uvw::TimerEvent> handlerTimerEvent = [&handler](const uvw::TimerEvent& e, auto&) { handler.onTimerEvent(e); };
 
