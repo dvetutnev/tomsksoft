@@ -1,5 +1,6 @@
 #include "session.h"
 #include "mocks.h"
+#include "create_packet.h"
 
 #include <algorithm>
 
@@ -96,16 +97,9 @@ TEST(Session, normal) {
 
     Session<MockServer, MockWriter, MockSocket, MockTimer> session{server, writer, client, timer};
 
-    const std::string data = "abcdef";
-    const std::uint32_t header = ::htonl(data.size());
-    const std::size_t packetLength = sizeof(header) + data.size();
+    EXPECT_CALL(writer, push("abcdef")).Times(1);
 
-    uvw::DataEvent dataEvent{std::make_unique<char[]>(packetLength), packetLength};;
-    std::copy_n(reinterpret_cast<const char*>(&header), sizeof(header), dataEvent.data.get());
-    std::copy_n(data.data(), data.size(), dataEvent.data.get() + sizeof(header));
-
-    EXPECT_CALL(writer, push(data)).Times(1);
-
+    auto dataEvent = createPacket("abcdef");
     handlerDataEvent(dataEvent, *client);
 }
 
@@ -124,18 +118,6 @@ TEST(Session, repeat) {
     EXPECT_CALL(*timer, again).Times(AtLeast(1));
 
     Session<MockServer, MockWriter, MockSocket, MockTimer> session{server, writer, client, timer};
-
-    auto createPacket = [](const std::string& data) -> uvw::DataEvent {
-        std::uint32_t header = ::htonl(data.size());
-        std::size_t packetLength = sizeof(header) + data.size();
-
-        uvw::DataEvent packet{std::make_unique<char[]>(packetLength), packetLength};;
-
-        std::copy_n(reinterpret_cast<const char*>(&header), sizeof(header), packet.data.get());
-        std::copy_n(data.data(), data.size(), packet.data.get() + sizeof(header));
-
-        return packet;
-    };
 
     const std::string data1 = "abcdefqwert";
     auto packet1 = createPacket(data1);
