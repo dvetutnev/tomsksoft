@@ -50,7 +50,7 @@ TEST(Session, networkError) {
     MockServer server;
     StrictMock<MockWriter> writer;
 
-    auto client = std::make_shared<StrictMock<MockSocket>>();
+    auto client = std::make_shared<NiceMock<MockSocket>>();
 
     MockHandle::THandler<uvw::DataEvent> handlerDataEvent;
     EXPECT_CALL(*client, saveDataHandler).WillOnce(SaveArg<0>(&handlerDataEvent));
@@ -151,4 +151,41 @@ TEST(Session, repeat) {
 
     handlerDataEvent(packet1, *client);
     handlerDataEvent(packet2, *client);
+}
+
+TEST(Session, disconnect) {
+    StrictMock<MockServer> server;
+    NiceMock<MockWriter> writer;
+
+    auto client = std::make_shared<NiceMock<MockSocket>>();
+
+    MockHandle::THandler<uvw::DataEvent> handlerDataEvent;
+    EXPECT_CALL(*client, saveDataHandler).WillOnce(SaveArg<0>(&handlerDataEvent));
+
+    MockHandle::THandler<uvw::EndEvent> handlerEndEvent;
+    EXPECT_CALL(*client, saveEndHandler).WillOnce(SaveArg<0>(&handlerEndEvent));
+
+    EXPECT_CALL(*client, read).Times(1);
+
+    auto timer = std::make_shared<NiceMock<MockTimer>>();
+
+    Session<MockServer, MockWriter, MockSocket, MockTimer> session{server, writer, client, timer};
+
+    auto createPacket = [](const std::string& data) -> uvw::DataEvent {
+        std::uint32_t header = ::htonl(data.size());
+        std::size_t packetLength = sizeof(header) + data.size();
+
+        uvw::DataEvent packet{std::make_unique<char[]>(packetLength), packetLength};;
+
+        std::copy_n(reinterpret_cast<const char*>(&header), sizeof(header), packet.data.get());
+        std::copy_n(data.data(), data.size(), packet.data.get() + sizeof(header));
+
+        return packet;
+    };
+
+    EXPECT_CALL(server, remove(&session)).Times(1);
+
+    auto packet = createPacket("abcdefqwert");
+    handlerDataEvent(packet, *client);
+    handlerEndEvent(uvw::EndEvent{}, *client);
 }

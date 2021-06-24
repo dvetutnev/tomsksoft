@@ -11,6 +11,7 @@
 class SessionBase
 {
 public:
+    virtual void halt() = 0;
     virtual ~SessionBase() = default;
 };
 
@@ -20,6 +21,8 @@ class Session : public SessionBase
 {
 public:
     Session(Server&, Writer&, std::shared_ptr<Socket>, std::shared_ptr<Timer>);
+
+    void halt() override;
 
 private:
     Server& server;
@@ -41,7 +44,6 @@ private:
     bool isDataComplete() const;
     void processResult();
     void restart();
-    void halt();
 
     struct DefFSM
     {
@@ -110,6 +112,9 @@ Session<Server, Writer, Socket, Timer>::Session(Server& s, Writer& w, std::share
 
     auto errorHandler = [this] (const uvw::ErrorEvent&, auto&) { fsm.process_event(typename DefFSM::HaltEvent{}); };
     client->template on<uvw::ErrorEvent>(errorHandler);
+
+    auto endHandler = [this] (const uvw::EndEvent&, auto&) { fsm.process_event(typename DefFSM::HaltEvent{}); };
+    client->template on<uvw::EndEvent>(endHandler);
 
     auto timeoutHandler = [this] (const uvw::TimerEvent&, auto&) { fsm.process_event(typename DefFSM::HaltEvent{}); };
     timer->template on<uvw::TimerEvent>(timeoutHandler);
