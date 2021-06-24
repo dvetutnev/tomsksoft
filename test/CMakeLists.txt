@@ -4,7 +4,8 @@ add_executable(tests
     test_mocks.cpp
     test_session.cpp
     test_writer.cpp
-    test_uvw.cpp)
+    test_uvw.cpp
+    test_functional.cpp)
 
 target_link_libraries(tests
     sml::sml
