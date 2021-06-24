@@ -10,7 +10,16 @@ int main(int argc, char* argv[]) {
 
     Server server{*loop, config.address, config.port, config.log};
 
+    auto signal = loop->resource<uvw::SignalHandle>();
+    auto onSignal = [&server](const uvw::SignalEvent&, auto&) {
+        server.stop();
+    };
+    signal->on<uvw::SignalEvent>(onSignal);
+    signal->oneShot(SIGINT);
+
+
     loop->run();
+
 
     return EXIT_SUCCESS;
 }
