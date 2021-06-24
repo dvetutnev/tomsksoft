@@ -52,7 +52,7 @@ struct MockSocket : MockHandle
 
     MOCK_METHOD(void, saveDataHandler, (THandler<uvw::DataEvent>), ());
     MOCK_METHOD(void, saveErrorHandler, (THandler<uvw::ErrorEvent>), ());
-    MOCK_METHOD(void, saveCloseHandler, (THandler<uvw::CloseEvent>), ());
+    MOCK_METHOD(void, saveEndHandler, (THandler<uvw::CloseEvent>), ());
 
     template <typename E>
     void on(THandler<E> h) {
@@ -62,8 +62,8 @@ struct MockSocket : MockHandle
         else if constexpr (std::is_same_v<E, uvw::ErrorEvent>) {
             saveErrorHandler(h);
         }
-        else if constexpr (std::is_same_v<E, uvw::CloseEvent>) {
-            saveCloseHandler(h);
+        else if constexpr (std::is_same_v<E, uvw::EndEvent>) {
+            saveEndHandler(h);
         }
     }
 };
