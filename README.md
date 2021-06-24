@@ -219,3 +219,129 @@ TEST(Writer, shutdown) {
     handlerWriteEvent(event, *file);
 }
 ```
+
+# Сервер
+
+При запуске инстанционирует ожидающией сокет и **Writer**. При подключение клиента инстанционирует клиентский сокет и **Session** передавая ей клиентский сокет. Сессия при отлючении клиента удаляет себя из сервера (метод **remove**). При остановке сервер закрывает ожидающий сокет и пришибает сессии (метод **halt**). Реализация (тут я уж не стал тестами обкладывать):
+
+```cpp
+class Server
+{
+public:
+    Server(uvw::Loop& loop, std::string ip, unsigned int port, const std::filesystem::path&);
+
+    void remove(SessionBase*);
+    void stop();
+
+private:
+    uvw::Loop& loop;
+
+    std::shared_ptr<uvw::TCPHandle> listener;
+
+    using W = Writer<uvw::FileReq>;
+    std::shared_ptr<W> writer;
+
+    using S = Session<Server, W, uvw::TCPHandle, uvw::TimerHandle>;
+    std::set<std::shared_ptr<SessionBase>> connections;
+};
+
+
+inline Server::Server(uvw::Loop& loop, std::string ip, unsigned int port, const std::filesystem::path& path)
+    :
+      loop{loop}
+{
+    listener = loop.resource<uvw::TCPHandle>();
+
+    auto onConnect = [this] (const uvw::ListenEvent&, auto&) {
+        auto client = this->loop.resource<uvw::TCPHandle>();
+        this->listener->accept(*client);
+
+        auto timer = this->loop.resource<uvw::TimerHandle>();
+
+        auto session = std::make_shared<S>(*this, *writer, std::move(client), std::move(timer));
+        this->connections.insert(std::move(session));
+    };
+    listener->on<uvw::ListenEvent>(onConnect);
+
+    auto onError = [] (const uvw::ErrorEvent& e, auto&) {
+        std::cout << "Server error: " << e.what() << std::endl;
+        std::abort();
+    };
+    listener->on<uvw::ErrorEvent>(onError);
+
+    listener->bind("127.0.0.1", 4242);
+    listener->listen();
+
+    auto file = loop.resource<uvw::FileReq>();
+    file->openSync(path, O_CREAT | O_RDWR, 0644);
+    writer = std::make_shared<W>(std::move(file));
+}
+
+inline void Server::remove(SessionBase* s) {
+    auto pred = [s] (const std::shared_ptr<SessionBase>& conn) -> bool {
+        return conn.get() == s;
+    };
+    auto it = std::find_if(std::begin(connections), std::end(connections), pred);
+    assert(it != std::end(connections));
+    connections.erase(it);
+}
+
+inline void Server::stop() {
+    listener->close();
+
+    auto copy = connections;
+    for (auto& session : copy) {
+        session->halt();
+    }
+
+    std::cout << "Server in stop" << std::endl;
+}
+```
+
+Функциональный тест:
+
+```cpp
+TEST(Functional, _) {
+    const std::filesystem::path path = "log.txt";
+    if (std::filesystem::exists(path)) {
+        std::filesystem::remove(path);
+    }
+
+    auto loop = uvw::Loop::getDefault();
+
+    Server server{*loop, "127.0.0.1", 4242, path};
+
+    auto socket = loop->resource<uvw::TCPHandle>();
+    auto onConnect = [](const uvw::ConnectEvent&, uvw::TCPHandle& socket){
+        uvw::DataEvent packet = createPacket("sTRINg");
+        socket.write(std::move(std::move(packet.data)), packet.length);
+        socket.close();
+    };
+    auto onError = [](const uvw::ErrorEvent& e, auto&) {
+        FAIL() << "Connect failed: " << e.what();
+    };
+
+    socket->once<uvw::ConnectEvent>(onConnect);
+    socket->on<uvw::ErrorEvent>(onError);
+    socket->connect(std::string{"127.0.0.1"}, 4242);
+
+    auto timer = loop->resource<uvw::TimerHandle>();
+    auto onTimer = [&server, &timer](const uvw::TimerEvent&, auto&) {
+        server.stop();
+        timer->close();
+    };
+    timer->on<uvw::TimerEvent>(onTimer);
+
+    timer->start(std::chrono::milliseconds{100}, std::chrono::milliseconds{0});
+
+
+    loop->run();
+
+
+    std::fstream file{path};
+    std::string log;
+    file >> log;
+
+    ASSERT_EQ(log, "sTRINg");
+}
+```

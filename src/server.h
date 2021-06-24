@@ -52,6 +52,7 @@ inline Server::Server(uvw::Loop& loop, std::string ip, unsigned int port, const 
 
     auto onError = [] (const uvw::ErrorEvent& e, auto&) {
         std::cout << "Server error: " << e.what() << std::endl;
+        std::abort();
     };
     listener->on<uvw::ErrorEvent>(onError);
 
