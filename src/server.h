@@ -79,4 +79,6 @@ inline void Server::stop() {
     for (auto& session : copy) {
         session->halt();
     }
+
+    std::cout << "Server in stop" << std::endl;
 }

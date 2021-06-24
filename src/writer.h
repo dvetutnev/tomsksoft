@@ -5,6 +5,7 @@
 
 #include <deque>
 #include <algorithm>
+#include <iostream>
 
 
 template <typename File>
@@ -78,6 +79,7 @@ Writer<File>::Writer(std::shared_ptr<File> f)
 
 template <typename File>
 void Writer<File>::push(const std::string& d) {
+    std::cout << d << std::endl;
     typename DefFSM::DataEvent e{d};
     fsm.process_event(e);
 }
