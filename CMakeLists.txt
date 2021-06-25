@@ -44,5 +44,3 @@ target_link_libraries(tomsksoft-client
     nlohmann_json::nlohmann_json)
 
 add_subdirectory(test)
-
-install(TARGETS tomsksoft-server tomsksoft-client)

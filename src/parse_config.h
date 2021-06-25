@@ -28,5 +28,5 @@ inline Config parseConfig(const std::filesystem::path& path) {
 }
 
 inline Config defaultConfig() {
-    return Config{"127.0.0.1", 6789, "log.txt"};
+    return Config{"0.0.0.0", 6789, "log.txt"};
 }

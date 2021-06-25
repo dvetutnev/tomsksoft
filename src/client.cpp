@@ -41,11 +41,13 @@ int main(int argc, char* argv[]) {
     auto loop = uvw::Loop::getDefault();
     auto client = loop->resource<uvw::TCPHandle>();
 
-    auto clientOnConnect = [&client, &getData] (const uvw::ConnectEvent&, auto&) {
+    auto onConnect = [&client, &getData] (const uvw::ConnectEvent&, auto&) {
+        std::cout << "onConnect" << std::endl;
         auto d = getData();
         client->write(std::move(d->data), d->length);
     };
-    auto clientOnWrite = [&client, &getData] (const uvw::WriteEvent&, auto&) {
+    auto onWrite = [&client, &getData] (const uvw::WriteEvent& e, auto&) {
+        std::cout << "onWrite" << std::endl;
         auto d = getData();
         if (d) {
             client->write(std::move(d->data), d->length);
@@ -62,8 +64,8 @@ int main(int argc, char* argv[]) {
         std::abort();
     };
 
-    client->on<uvw::ConnectEvent>(clientOnConnect);
-    client->on<uvw::WriteEvent>(clientOnWrite);
+    client->on<uvw::ConnectEvent>(onConnect);
+    client->on<uvw::WriteEvent>(onWrite);
     client->on<uvw::ShutdownEvent>(clientOnShutdown);
     client->on<uvw::ErrorEvent>(onError);
 
